@@ -5,13 +5,16 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
-
+int j=1;
 int count=1;             // Contador global para ir agregando los directorios al pool
-char    md5[10];    
-char    name[20];        // Nombre del archivo al que se le realizara el hash
-char    readbuffer[32];  // Contendra el hash 
+char  md5[10];    
+char  name[20];          // Nombre del archivo al que se le realizara el hash
+char  readbuffer[32];    // Contendra el hash 
 FILE *fp;                // Descriptor para el pipe generado por popen
+
+pthread_mutex_t key;
 
 
 struct directoy{         // Estructura para guardar cada directorio en el pool de directorios
@@ -58,7 +61,14 @@ int esDirectorio(const char *parent, char *name, struct dirent *dt) {    // Reto
 }
 
 
-int verifacion(const char *name) {                                        // Verifica si es directorio o archivo 
+void *verifacion( void *ptr) { 
+
+    printf("Bloqueando Llave\n");
+    pthread_mutex_lock(&key);
+    printf("Llave Bloqueada\n");
+    pool[j].visitado=1;
+    const char *name = ((char*)ptr);
+    printf("Directorio a revisar %s\n",name);                                        // Verifica si es directorio o archivo 
     struct stat info;
     DIR *dir = opendir(name);
     struct dirent *ent;
@@ -68,13 +78,14 @@ int verifacion(const char *name) {                                        // Ver
             char *entry_name = ent->d_name;
 
         if (esDirectorio(name, entry_name, ent)){                           // Si es un directorio lo agrega al pool de directorios a visitar
-            
             char *next = malloc(strlen(name) + strlen(entry_name) + 2);
             sprintf(next, "%s/%s", name, entry_name);
             pool[count].path = malloc(strlen(next));
             pool[count].path = next;
             pool[count].visitado = 0;
+            printf("Directorio obtenido %s\n", pool[count].path);
             count++;
+
 
         }else if((ent->d_type == DT_REG)&&(info.st_size>0)){              // Si es un archivo calcula el hash md5
           // Hash md5 en modo binario 
@@ -87,6 +98,8 @@ int verifacion(const char *name) {                                        // Ver
         }
     }
     closedir(dir);
+    pthread_mutex_unlock(&key);
+    printf("Llave desbloqueada\n\n");
 }
 
 /*void printstruct(){
@@ -96,9 +109,39 @@ int verifacion(const char *name) {                                        // Ver
 }*/
 
 int main(int argc, char *argv[]){
-  
-    system("make");    
-    verifacion("/home/roybert/Escritorio/Proyecto1/ArchivosDuplicados/");
+
+    
+    int i;
+    
+    pthread_t threads[50];
+    system("make");  
+    for ( i = 0; i < 40; ++i){
+        pool[i].path=NULL;
+    }
+    verifacion("/home/roybert/Documentos/");
+    
+
+    for ( i=0; i<50; i++ ){
+      
+      while(1){
+        if(pool[j].path==NULL){
+          printf("No hay directorios\n");
+          return 0;
+        }else if(pool[j].visitado==0){
+          printf("visitado = 0\n");
+          printf("A visitar: %s\n", pool[j].path);  
+          pthread_create(&threads[i], NULL, verifacion,(void *)pool[j].path);
+          pthread_join(threads[i],NULL);
+          //sleep(1);
+        }else if(pool[j].visitado==1){
+          printf("visitado = 1\n");
+          j++;
+        }
+      } 
+        // sleep(1);
+    }
+      
+    pthread_mutex_init(&key,NULL);
     
    // printstruct();
     return 0;
