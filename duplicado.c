@@ -16,6 +16,7 @@
 int j=1;
 int count=1;             // Contador global para ir agregando los directorios al pool
 int duplicado = 0;       // Contador de duplicados
+int cid = 0;             // Contador de archivos
 char *verhash;           // Verifica hash duplicado
 char  md5[10];    
 char  name[20];          // Nombre del archivo al que se le realizara el hash
@@ -38,14 +39,14 @@ struct archivo{           // struct para guardar cada uno de los archivos a comp
    struct stat info;      
    struct dirent *dt;
    struct archivo *next; 
-   char *hash;     
+   char *hash;   
+   int id;  
 };
 
 
 struct archivo *head = NULL;
 struct archivo *current = NULL;
 struct archivo *link2 = NULL;
-
 
 void insertVisitado(struct stat info, struct dirent *dt, char *hash){           // Funcion de insertar de una lista para ir guardando los archivos
    
@@ -54,11 +55,23 @@ void insertVisitado(struct stat info, struct dirent *dt, char *hash){           
    link->info = info;
    link->dt = dt;
    link->hash = hash;
-   printf("Vi: %-20s %ld  %s \n",link->dt->d_name,link->info.st_size, link->hash);
+   link->id = cid++;
+   printf("Vi: %-20s %ld  %s  %d \n",link->dt->d_name,link->info.st_size, link->hash, link->id);
 
    link->next = head;
    head = link;	
 
+   //verificar duplicados
+  /*link2 = head;
+  while( link2 != NULL ){
+      if( link->hash == link2->hash ){
+        if( link->id != link2->id ){
+          duplicado++;
+        } 
+      }
+      link2 = link2->next;
+  }*/
+   //verificar duplicados
 }
 
 
@@ -112,9 +125,9 @@ void *verifacion( void *ptr) {
           // Hash md5 en modo binario 
         	}else if ( strcmp( mode, "l" )==0 ) {
           // Hash md5 en modo libreria
-			strcat(md5, ent->d_name);
-			int MDFile( char *md5, char readbuffer[33]);               // Funciona pero no guarda los hashes aun
-            insertVisitado(info,ent,readbuffer);
+			       strcat(md5, ent->d_name);
+			       int MDFile( char *md5, char readbuffer[33]);               // Funciona pero no guarda los hashes aun
+             insertVisitado(info,ent,readbuffer);
           // Hash md5 en modo libreria
         	} else {
         		printf("modo incompatible\n");
@@ -134,23 +147,29 @@ void *verifacion( void *ptr) {
     }
 }*/
 
-//Verifica si hay duplicado e imprime
-void verificar_duplicados() {
-	link2 = head;
+//Imprime Duplicados
+void Imprimir_duplicados() {
+	/*link2 = head;
 	while( link2 != NULL ){
-		link2->hash = verhash;
+		verhash = link2->hash;
 		current = head;
 		while( current != NULL ){
 			if( current->hash == verhash ){
-				printf("oh pol dio se repitio \n");    //INCOMPLETO :s falta poner que cuando se repite imprima las cosas y una verificacion de cuando ea con el mismo 
+        if( current->id != link2->id ){
+          printf("%-20s es duplicado de %-20s \n",link->dt->d_name, link->dt->d_name);
+        } 
 			}
 			current = current->next;
 		}
 		link2 = link2->next;
-	}
+	}*/
+  while ( head != NULL ){
+    printf("Vi: %-20s %ld  %s  %d \n",head->dt->d_name,head->info.st_size, head->hash, head->id);
+    head = head->next;
+  }
 
 }
-//Verifica si hay duplicado e imprime
+//Imprime Duplicados
 
 
 
@@ -175,10 +194,14 @@ int main(int argc, char *argv[]){
       while(1){
         if(pool[j].path==NULL){
           printf("No hay directorios\n");
-          //Verifica si hay duplicado
-		//verificar_duplicados();
-          //Verifica si hay duplicado
+          printf("Se han encontrado %d archivos duplicados \n", duplicado );
+          //if( duplicados>0 ){
+          //Imprime duplicados
+              Imprimir_duplicados();
+          //Imprime duplicados
+          //}
           return 0;
+          //else{ return 0; }
         }else if(pool[j].visitado==0){
           //printf("visitado = 0\n");
           //printf("A visitar: %s\n", pool[j].path);  
