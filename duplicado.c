@@ -102,7 +102,7 @@ void *verifacion( void *ptr) {
 
         }else if((ent->d_type == DT_REG)&&(info.st_size>0)){              // Si es un archivo calcula el hash md5
           
-        	//if ( mode == "e" ){
+        	if ( strcmp( mode, "e" )==0 ){
           // Hash md5 en modo binario 
             strcpy(md5,  "./md5 ");
             strcat(md5, ent->d_name);
@@ -110,14 +110,16 @@ void *verifacion( void *ptr) {
             fgets(readbuffer,32,fp);
             insertVisitado(info,ent,readbuffer);
           // Hash md5 en modo binario 
-        /*	}else{
+        	}else if ( strcmp( mode, "l" )==0 ) {
           // Hash md5 en modo libreria
-			//strcat(md5, ent->d_name);
-			//int MDFile( char *md5, char readbuffer[33]);               // Funciona pero no guarda los hashes aun
-            //insertVisitado(info,ent,readbuffer);
+			strcat(md5, ent->d_name);
+			int MDFile( char *md5, char readbuffer[33]);               // Funciona pero no guarda los hashes aun
+            insertVisitado(info,ent,readbuffer);
           // Hash md5 en modo libreria
-        	}*/
-
+        	} else {
+        		printf("modo incompatible\n");
+        		return 0;
+        	}
         }
     }
     closedir(dir);
